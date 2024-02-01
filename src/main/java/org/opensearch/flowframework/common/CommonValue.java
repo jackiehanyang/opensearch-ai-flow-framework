@@ -65,6 +65,8 @@ public class CommonValue {
     /** The field name for provision workflow within a use case template*/
     public static final String PROVISION_WORKFLOW = "provision";
 
+    public static final String SEARCH_WORKFLOW = "search";
+
     /*
      * Constants associated with plugin configuration
      */

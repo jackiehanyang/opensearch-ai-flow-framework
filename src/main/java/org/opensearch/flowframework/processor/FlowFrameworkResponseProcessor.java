@@ -9,6 +9,8 @@ import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.flowframework.model.Template;
+import org.opensearch.flowframework.model.Workflow;
+import org.opensearch.flowframework.model.WorkflowNode;
 import org.opensearch.flowframework.transport.GetWorkflowAction;
 import org.opensearch.flowframework.transport.WorkflowRequest;
 import org.opensearch.search.pipeline.AbstractProcessor;
@@ -18,6 +20,8 @@ import org.opensearch.search.pipeline.SearchResponseProcessor;
 import java.util.Map;
 
 import static org.opensearch.flowframework.common.CommonValue.GLOBAL_CONTEXT_INDEX;
+import static org.opensearch.flowframework.common.CommonValue.PROVISION_WORKFLOW;
+import static org.opensearch.flowframework.common.CommonValue.SEARCH_WORKFLOW;
 import static org.opensearch.ingest.ConfigurationUtils.readStringProperty;
 
 public class FlowFrameworkResponseProcessor extends AbstractProcessor implements SearchResponseProcessor {
@@ -59,6 +63,9 @@ public class FlowFrameworkResponseProcessor extends AbstractProcessor implements
         GetResponse getResponse = client.get(getRequest).get();
         System.out.println("source: " + getResponse.getSourceAsString());
         Template template = Template.parse(getResponse.getSourceAsString());
+        Workflow searchWorkflow  = template.workflows().get(SEARCH_WORKFLOW);
+        WorkflowNode workflowNode = searchWorkflow.nodes().get(0);
+        System.out.println("node: " + workflowNode.type());
         System.out.println("template: " + template.toJson());
 
         return response;
