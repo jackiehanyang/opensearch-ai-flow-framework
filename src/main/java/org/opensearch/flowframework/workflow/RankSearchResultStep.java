@@ -40,8 +40,8 @@ public class RankSearchResultStep implements WorkflowStep {
         List<SearchHit> sortedHits = originalHits.stream()
                 .sorted((hit1, hit2) -> {
                     // Extract the "aa" field values as Double from the source maps of hit1 and hit2
-                    Double aa1 = toDouble(hit1.getSourceAsMap().get("aa"));
-                    Double aa2 = toDouble(hit2.getSourceAsMap().get("aa"));
+                    Double aa1 = toDouble(hit1.getSourceAsMap().get("sepal_length_in_cm"));
+                    Double aa2 = toDouble(hit2.getSourceAsMap().get("sepal_length_in_cm"));
 
                     // Use Double.compare to compare the "aa" field values, handling nulls
                     return Double.compare(aa1 != null ? aa1 : Double.MIN_VALUE, aa2 != null ? aa2 : Double.MIN_VALUE);
