@@ -22,7 +22,7 @@ public class FlowFrameworkResponseProcessor extends AbstractProcessor implements
     private final Logger logger = LogManager.getLogger(FlowFrameworkResponseProcessor.class);
 
 
-    public static final String TYPE = "rank_search_result";
+    public static final String TYPE = "flow_framework_response_processor";
 
     private final String workflowId;
 
