@@ -60,6 +60,7 @@ public class GetWorkflowTransportAction extends HandledTransportAction<WorkflowR
         if (flowFrameworkIndicesHandler.doesIndexExist(GLOBAL_CONTEXT_INDEX)) {
 
             String workflowId = request.getWorkflowId();
+            System.out.println("inside transport action: " + workflowId);
             GetRequest getRequest = new GetRequest(GLOBAL_CONTEXT_INDEX, workflowId);
 
             // Retrieve workflow by ID

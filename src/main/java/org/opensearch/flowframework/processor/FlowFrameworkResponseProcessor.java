@@ -2,6 +2,8 @@ package org.opensearch.flowframework.processor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.get.GetRequest;
+import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
@@ -15,6 +17,7 @@ import org.opensearch.search.pipeline.SearchResponseProcessor;
 
 import java.util.Map;
 
+import static org.opensearch.flowframework.common.CommonValue.GLOBAL_CONTEXT_INDEX;
 import static org.opensearch.ingest.ConfigurationUtils.readStringProperty;
 
 public class FlowFrameworkResponseProcessor extends AbstractProcessor implements SearchResponseProcessor {
@@ -52,13 +55,11 @@ public class FlowFrameworkResponseProcessor extends AbstractProcessor implements
     public SearchResponse processResponse(SearchRequest request, SearchResponse response) throws Exception {
         System.out.println("id: " + workflowId);
 
-        WorkflowRequest workflowRequest = new WorkflowRequest(workflowId, null);
-        client.execute(GetWorkflowAction.INSTANCE, workflowRequest, ActionListener.wrap(getWorkflowResponse -> {
-            Template template = getWorkflowResponse.getTemplate();
-            System.out.println("here: " + template.toJson());
-        }, exception -> {
-            logger.error("Failed to send back provision workflow exception", exception);
-        }));
+        GetRequest getRequest = new GetRequest(GLOBAL_CONTEXT_INDEX, workflowId);
+        GetResponse getResponse = client.get(getRequest).get();
+        System.out.println("source: " + getResponse.getSourceAsString());
+        Template template = Template.parse(getResponse.getSourceAsString());
+        System.out.println("template: " + template.toJson());
 
         return response;
     }
