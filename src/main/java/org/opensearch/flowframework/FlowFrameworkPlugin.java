@@ -115,6 +115,7 @@ public class FlowFrameworkPlugin extends Plugin implements ActionPlugin, SearchP
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         Settings settings = environment.settings();
+        this.client = client;
         flowFrameworkSettings = new FlowFrameworkSettings(clusterService, settings);
         MachineLearningNodeClient mlClient = new MachineLearningNodeClient(client);
         EncryptorUtils encryptorUtils = new EncryptorUtils(clusterService, client);
@@ -202,7 +203,7 @@ public class FlowFrameworkPlugin extends Plugin implements ActionPlugin, SearchP
     @Override
     public Map<String, Processor.Factory<SearchResponseProcessor>> getResponseProcessors(Parameters parameters) {
         Map<String, Processor.Factory<SearchResponseProcessor>> responseProcessors = new HashMap<>();
-        responseProcessors.put(FlowFrameworkResponseProcessor.TYPE, new FlowFrameworkResponseProcessor.Factory(this.client));
+        responseProcessors.put(FlowFrameworkResponseProcessor.TYPE, new FlowFrameworkResponseProcessor.Factory(client));
         return responseProcessors;
     }
 }
