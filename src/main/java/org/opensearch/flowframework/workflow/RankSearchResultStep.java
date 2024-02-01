@@ -1,14 +1,21 @@
 package org.opensearch.flowframework.workflow;
 
 import org.opensearch.action.support.PlainActionFuture;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.SearchHits;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class RankSearchResultStep implements WorkflowStep {
 
     public RankSearchResultStep() {}
 
     public static final String NAME = "rank_search_result";
+
     /**
      * Triggers the actual processing of the building block.
      *
@@ -26,6 +33,30 @@ public class RankSearchResultStep implements WorkflowStep {
         PlainActionFuture<WorkflowData> future = PlainActionFuture.newFuture();
         future.onResponse(WorkflowData.EMPTY);
         return future;
+    }
+
+    public SearchHits rankAsec(SearchHits hits) {
+        List<SearchHit> originalHits = Arrays.asList(hits.getHits());
+        List<SearchHit> sortedHits = originalHits.stream()
+                .sorted((hit1, hit2) -> {
+                    // Extract the "aa" field values as Double from the source maps of hit1 and hit2
+                    Double aa1 = toDouble(hit1.getSourceAsMap().get("aa"));
+                    Double aa2 = toDouble(hit2.getSourceAsMap().get("aa"));
+
+                    // Use Double.compare to compare the "aa" field values, handling nulls
+                    return Double.compare(aa1 != null ? aa1 : Double.MIN_VALUE, aa2 != null ? aa2 : Double.MIN_VALUE);
+                })
+                .collect(Collectors.toList());
+        SearchHits sortedSearchHits = new SearchHits(sortedHits.toArray(new SearchHit[0]), hits.getTotalHits(),hits.getMaxScore());
+        return sortedSearchHits;
+    }
+
+    // Utility method to safely convert an object to Double
+    private Double toDouble(Object obj) {
+        if (obj instanceof Number) {
+            return ((Number) obj).doubleValue();
+        }
+        return null;
     }
 
     /**

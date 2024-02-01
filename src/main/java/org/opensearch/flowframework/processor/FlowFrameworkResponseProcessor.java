@@ -6,6 +6,7 @@ import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
+import org.opensearch.action.search.SearchResponseSections;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.flowframework.model.Template;
@@ -13,11 +14,17 @@ import org.opensearch.flowframework.model.Workflow;
 import org.opensearch.flowframework.model.WorkflowNode;
 import org.opensearch.flowframework.transport.GetWorkflowAction;
 import org.opensearch.flowframework.transport.WorkflowRequest;
+import org.opensearch.flowframework.workflow.RankSearchResultStep;
+import org.opensearch.search.SearchHits;
+import org.opensearch.search.aggregations.InternalAggregations;
+import org.opensearch.search.internal.InternalSearchResponse;
 import org.opensearch.search.pipeline.AbstractProcessor;
 import org.opensearch.search.pipeline.Processor;
 import org.opensearch.search.pipeline.SearchResponseProcessor;
+import org.opensearch.search.profile.SearchProfileShardResults;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.opensearch.flowframework.common.CommonValue.GLOBAL_CONTEXT_INDEX;
 import static org.opensearch.flowframework.common.CommonValue.PROVISION_WORKFLOW;
@@ -57,18 +64,33 @@ public class FlowFrameworkResponseProcessor extends AbstractProcessor implements
      */
     @Override
     public SearchResponse processResponse(SearchRequest request, SearchResponse response) throws Exception {
-        System.out.println("id: " + workflowId);
-
-        GetRequest getRequest = new GetRequest(GLOBAL_CONTEXT_INDEX, workflowId);
-        GetResponse getResponse = client.get(getRequest).get();
-        System.out.println("source: " + getResponse.getSourceAsString());
+        SearchHits hits = response.getHits();
+        if (hits.getHits().length == 0) {
+            logger.info("TotalHits = 0. Returning search response without applying flow framework processor");
+            return response;
+        }
+        GetResponse getResponse = client.get(new GetRequest(GLOBAL_CONTEXT_INDEX, workflowId)).get();
         Template template = Template.parse(getResponse.getSourceAsString());
         Workflow searchWorkflow  = template.workflows().get(SEARCH_WORKFLOW);
         WorkflowNode workflowNode = searchWorkflow.nodes().get(0);
-        System.out.println("node: " + workflowNode.type());
-        System.out.println("template: " + template.toJson());
+        logger.info("Executing search workflow step: " + workflowNode.type());
+        RankSearchResultStep rankSearchResultStep = new RankSearchResultStep();
+        long startTime = System.nanoTime();
+        SearchHits rankedSearchHits = rankSearchResultStep.rankAsec(hits);
+        long rankedTimeTookMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 
-        return response;
+
+        final SearchResponseSections transformedSearchResponseSections = new InternalSearchResponse(rankedSearchHits,
+                (InternalAggregations) response.getAggregations(), response.getSuggest(),
+                new SearchProfileShardResults(response.getProfileResults()), response.isTimedOut(),
+                response.isTerminatedEarly(), response.getNumReducePhases());
+
+        final SearchResponse transformedResponse = new SearchResponse(transformedSearchResponseSections, response.getScrollId(),
+                response.getTotalShards(), response.getSuccessfulShards(),
+                response.getSkippedShards(), response.getTook().getMillis() + rankedTimeTookMs, response.getShardFailures(),
+                response.getClusters());
+
+        return transformedResponse;
     }
 
     /**
