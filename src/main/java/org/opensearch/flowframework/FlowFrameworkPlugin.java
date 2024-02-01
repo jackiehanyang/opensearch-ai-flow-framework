@@ -27,6 +27,7 @@ import org.opensearch.env.Environment;
 import org.opensearch.env.NodeEnvironment;
 import org.opensearch.flowframework.common.FlowFrameworkSettings;
 import org.opensearch.flowframework.indices.FlowFrameworkIndicesHandler;
+import org.opensearch.flowframework.processor.FlowFrameworkResponseProcessor;
 import org.opensearch.flowframework.rest.RestCreateWorkflowAction;
 import org.opensearch.flowframework.rest.RestDeleteWorkflowAction;
 import org.opensearch.flowframework.rest.RestDeprovisionWorkflowAction;
@@ -65,13 +66,17 @@ import org.opensearch.repositories.RepositoriesService;
 import org.opensearch.rest.RestController;
 import org.opensearch.rest.RestHandler;
 import org.opensearch.script.ScriptService;
+import org.opensearch.search.pipeline.Processor;
+import org.opensearch.search.pipeline.SearchResponseProcessor;
 import org.opensearch.threadpool.ExecutorBuilder;
 import org.opensearch.threadpool.ScalingExecutorBuilder;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.watcher.ResourceWatcherService;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.opensearch.flowframework.common.CommonValue.FLOW_FRAMEWORK_THREAD_POOL_PREFIX;
@@ -85,9 +90,10 @@ import static org.opensearch.flowframework.common.FlowFrameworkSettings.WORKFLOW
 /**
  * An OpenSearch plugin that enables builders to innovate AI apps on OpenSearch.
  */
-public class FlowFrameworkPlugin extends Plugin implements ActionPlugin {
+public class FlowFrameworkPlugin extends Plugin implements ActionPlugin, SearchPipelinePlugin {
 
     private FlowFrameworkSettings flowFrameworkSettings;
+    private Client client;
 
     /**
      * Instantiate this plugin.
@@ -193,4 +199,10 @@ public class FlowFrameworkPlugin extends Plugin implements ActionPlugin {
         );
     }
 
+    @Override
+    public Map<String, Processor.Factory<SearchResponseProcessor>> getResponseProcessors(Parameters parameters) {
+        Map<String, Processor.Factory<SearchResponseProcessor>> responseProcessors = new HashMap<>();
+        responseProcessors.put(FlowFrameworkResponseProcessor.TYPE, new FlowFrameworkResponseProcessor.Factory(this.client));
+        return responseProcessors;
+    }
 }

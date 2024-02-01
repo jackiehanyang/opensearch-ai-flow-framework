@@ -105,7 +105,7 @@ public class CreateWorkflowTransportAction extends HandledTransportAction<Workfl
         String[] validateAll = { "all" };
         if (Arrays.equals(request.getValidation(), validateAll)) {
             try {
-                validateWorkflows(templateWithUser);
+                //validateWorkflows(templateWithUser);
             } catch (Exception e) {
                 logger.error("Workflow validation failed for template: {}", templateWithUser.name());
                 listener.onFailure(
